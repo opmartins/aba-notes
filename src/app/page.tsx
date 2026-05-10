@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PlusIcon, UserRoundIcon, CalendarIcon, ActivityIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -19,16 +20,27 @@ import { toast } from "sonner";
 export default function Home() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   const [dialogAberto, setDialogAberto] = useState(false);
   const [pacienteEditando, setPacienteEditando] = useState<Paciente | undefined>();
 
   const carregarPacientes = async () => {
+    setCarregando(true);
+    setErro(null);
     try {
-      const res = await fetch("/api/pacientes");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch("/api/pacientes", { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`);
       const dados: Paciente[] = await res.json();
       setPacientes(dados);
-    } catch {
-      toast.error("Erro ao carregar pacientes");
+    } catch (err) {
+      const msg = err instanceof Error && err.name === "AbortError"
+        ? "Tempo esgotado. Verifique a conexão com o servidor."
+        : "Não foi possível carregar os pacientes.";
+      setErro(msg);
+      toast.error(msg);
     } finally {
       setCarregando(false);
     }
@@ -151,6 +163,15 @@ export default function Home() {
 
           {carregando ? (
             <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+          ) : erro ? (
+            <Card className="border-destructive/50">
+              <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
+                <p className="text-destructive text-sm">{erro}</p>
+                <Button variant="outline" onClick={carregarPacientes}>
+                  Tentar novamente
+                </Button>
+              </CardContent>
+            </Card>
           ) : pacientes.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
@@ -200,9 +221,12 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" render={<a href={`/pacientes/${p.id}`} />}>
+                      <Link
+                        href={`/pacientes/${p.id}`}
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                      >
                         Ver avaliações
-                      </Button>
+                      </Link>
                       <Button
                         variant="ghost"
                         size="sm"

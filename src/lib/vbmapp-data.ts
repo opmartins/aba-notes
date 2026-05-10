@@ -2,6 +2,9 @@
 // Baseado em: Sundberg, M. L. (2014). VB-MAPP (2ª ed.). AVB Press.
 // Critérios reescritos conforme material adaptado ao português.
 
+import { MARCOS_NIVEL2 } from "./marcos-nivel2";
+import { MARCOS_NIVEL3 } from "./marcos-nivel3";
+
 export type CodigoAplicacao = "T" | "O" | "E";
 export type Area =
   | "mando"
@@ -307,6 +310,8 @@ export const MARCOS: Marco[] = [
   { id: "estrutura_linguistica_1_5", area: "estrutura_linguistica", nivel: 1, item: 5, pontuacaoMaxima: 1, codigo: "O",
     descricao: "Usa plural, passado ou outras flexões morfológicas em 5 situações",
     criterio: "Uso espontâneo de pelo menos 1 flexão morfológica em 5 ocorrências." },
+  ...MARCOS_NIVEL2,
+  ...MARCOS_NIVEL3,
 ];
 
 // ─────────────────────────────────────────────────────────

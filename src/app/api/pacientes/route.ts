@@ -1,20 +1,18 @@
-import { db, pacientes } from "@/lib/db";
-import { inicializarBanco } from "@/lib/db/init";
+import { getDb, pacientes } from "@/lib/db";
 import { pacienteSchema } from "@/lib/validators/paciente";
 import { desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-inicializarBanco();
-
 export async function GET() {
   try {
-    const lista = await db
+    const lista = await getDb()
       .select()
       .from(pacientes)
       .where(eq(pacientes.ativo, true))
       .orderBy(desc(pacientes.criadoEm));
     return NextResponse.json(lista);
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/pacientes]", err);
     return NextResponse.json({ error: "Erro ao buscar pacientes" }, { status: 500 });
   }
 }
@@ -24,7 +22,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const dados = pacienteSchema.parse(body);
 
-    const [novo] = await db
+    const [novo] = await getDb()
       .insert(pacientes)
       .values({
         ...dados,
@@ -34,6 +32,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(novo, { status: 201 });
   } catch (err) {
+    console.error("[POST /api/pacientes]", err);
     if (err instanceof Error) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
