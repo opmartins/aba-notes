@@ -1,4 +1,4 @@
-import { getDb, pacientes } from "@/lib/db";
+import { db, pacientes } from "@/lib/db";
 import { pacienteSchema } from "@/lib/validators/paciente";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const [paciente] = await getDb()
+    const [paciente] = await db
       .select()
       .from(pacientes)
       .where(eq(pacientes.id, Number(id)));
@@ -25,7 +25,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json();
     const dados = pacienteSchema.parse(body);
 
-    const [atualizado] = await getDb()
+    const [atualizado] = await db
       .update(pacientes)
       .set({ ...dados, atualizadoEm: new Date().toISOString() })
       .where(eq(pacientes.id, Number(id)))
@@ -45,7 +45,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    await getDb()
+    await db
       .update(pacientes)
       .set({ ativo: false, atualizadoEm: new Date().toISOString() })
       .where(eq(pacientes.id, Number(id)));

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SignInButton, SignUpButton, UserButton, Show } from "@clerk/nextjs";
 import { PlusIcon, UserRoundIcon, CalendarIcon, ActivityIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,29 +93,42 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <ActivityIcon className="h-6 w-6 text-primary" />
             <div>
-              <h1 className="text-xl font-semibold">VB-MAPP Assistant</h1>
+              <h1 className="text-xl font-semibold">ABA Notes</h1>
               <p className="text-xs text-muted-foreground">Avaliação e acompanhamento clínico</p>
             </div>
           </div>
 
-          <Dialog open={dialogAberto} onOpenChange={(open) => { if (!open) fecharDialog(); setDialogAberto(open); }}>
-            <DialogTrigger render={<Button onClick={() => setPacienteEditando(undefined)} />}>
-              <PlusIcon className="h-4 w-4" />
-              Novo paciente
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>
-                  {pacienteEditando ? "Editar paciente" : "Cadastrar novo paciente"}
-                </DialogTitle>
-              </DialogHeader>
-              <PacienteForm
-                paciente={pacienteEditando}
-                onSucesso={aoSalvar}
-                onCancelar={fecharDialog}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-3">
+            <Show when="signed-out">
+              <SignInButton mode="redirect">
+                <Button variant="outline" size="sm">Entrar</Button>
+              </SignInButton>
+              <SignUpButton mode="redirect">
+                <Button size="sm">Criar conta</Button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <Dialog open={dialogAberto} onOpenChange={(open) => { if (!open) fecharDialog(); setDialogAberto(open); }}>
+                <DialogTrigger render={<Button onClick={() => setPacienteEditando(undefined)} />}>
+                  <PlusIcon className="h-4 w-4" />
+                  Novo paciente
+                </DialogTrigger>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {pacienteEditando ? "Editar paciente" : "Cadastrar novo paciente"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <PacienteForm
+                    paciente={pacienteEditando}
+                    onSucesso={aoSalvar}
+                    onCancelar={fecharDialog}
+                  />
+                </DialogContent>
+              </Dialog>
+              <UserButton />
+            </Show>
+          </div>
         </div>
       </header>
 

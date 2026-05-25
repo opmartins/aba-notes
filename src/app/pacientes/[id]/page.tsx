@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getDb, pacientes, avaliacoes } from "@/lib/db";
+import { db, pacientes, avaliacoes } from "@/lib/db";
 import { eq, desc } from "drizzle-orm";
 import { ArrowLeftIcon, PlusIcon, ActivityIcon, CalendarIcon, ClipboardListIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
@@ -16,14 +16,14 @@ export default async function PacientePage({
   const { id } = await params;
   const pacienteId = Number(id);
 
-  const [paciente] = await getDb()
+  const [paciente] = await db
     .select()
     .from(pacientes)
     .where(eq(pacientes.id, pacienteId));
 
   if (!paciente) notFound();
 
-  const listaAvaliacoes = await getDb()
+  const listaAvaliacoes = await db
     .select()
     .from(avaliacoes)
     .where(eq(avaliacoes.pacienteId, pacienteId))

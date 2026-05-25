@@ -1,4 +1,4 @@
-import { getDb, avaliacoes } from "@/lib/db";
+import { db, avaliacoes } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
@@ -17,7 +17,7 @@ export async function PATCH(
     const body = await req.json();
     const dados = patchSchema.parse(body);
 
-    const [atualizada] = await getDb()
+    const [atualizada] = await db
       .update(avaliacoes)
       .set({ ...dados, atualizadoEm: new Date().toISOString() })
       .where(eq(avaliacoes.id, Number(avaliacaoId)))

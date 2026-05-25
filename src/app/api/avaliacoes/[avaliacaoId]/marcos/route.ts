@@ -1,4 +1,4 @@
-import { getDb, respostasMarcos } from "@/lib/db";
+import { db, respostasMarcos } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
@@ -19,8 +19,6 @@ export async function PUT(
     const { avaliacaoId } = await params;
     const body = await req.json();
     const dados = respostaSchema.parse(body);
-    const db = getDb();
-
     const existente = await db
       .select()
       .from(respostasMarcos)

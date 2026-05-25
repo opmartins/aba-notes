@@ -1,4 +1,4 @@
-import { getDb, avaliacoes } from "@/lib/db";
+import { db, avaliacoes } from "@/lib/db";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const dados = novaAvaliacaoSchema.parse(body);
 
-    const [nova] = await getDb()
+    const [nova] = await db
       .insert(avaliacoes)
       .values(dados)
       .returning();

@@ -1,17 +1,15 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { migrate } from "drizzle-orm/neon-http/migrator";
 import path from "path";
 
-const DB_PATH = path.join(process.cwd(), "data", "vbmapp.db");
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL não definida");
+}
 
-const sqlite = new Database(DB_PATH);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
+const sql = neon(process.env.DATABASE_URL);
+const db = drizzle(sql);
 
-const db = drizzle(sqlite);
-
-migrate(db, { migrationsFolder: path.join(process.cwd(), "src/lib/db/migrations") });
+await migrate(db, { migrationsFolder: path.join(process.cwd(), "src/lib/db/migrations") });
 
 console.log("Migração concluída.");
-sqlite.close();

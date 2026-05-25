@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { shadcn } from "@clerk/ui/themes";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -14,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VB-MAPP Assistant",
-  description: "Ferramenta clínica para avaliação e acompanhamento VB-MAPP",
+  title: "ABA Notes",
+  description: "Ferramenta clínica para avaliação e acompanhamento ABA",
 };
 
 export default function RootLayout({
@@ -26,8 +28,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-        <Toaster richColors position="top-right" />
+        <ClerkProvider appearance={{ theme: shadcn }}>
+          {children}
+          <Toaster richColors position="top-right" />
+        </ClerkProvider>
       </body>
     </html>
   );

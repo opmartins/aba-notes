@@ -1,11 +1,11 @@
-import { getDb, pacientes } from "@/lib/db";
+import { db, pacientes } from "@/lib/db";
 import { pacienteSchema } from "@/lib/validators/paciente";
 import { desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const lista = await getDb()
+    const lista = await db
       .select()
       .from(pacientes)
       .where(eq(pacientes.ativo, true))
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const dados = pacienteSchema.parse(body);
 
-    const [novo] = await getDb()
+    const [novo] = await db
       .insert(pacientes)
       .values({
         ...dados,
