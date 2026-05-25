@@ -1,5 +1,6 @@
-import { db, avaliacoes } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { db, avaliacoes, pacientes, supervisoes } from "@/lib/db";
+import { getUserId, getUserRole, unauthorized } from "@/lib/auth/roles";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -8,12 +9,40 @@ const patchSchema = z.object({
   observacoesGerais: z.string().optional(),
 });
 
+async function getAvaliacaoComAcesso(avaliacaoId: number, userId: string, role: string) {
+  const [avaliacao] = await db.select().from(avaliacoes).where(eq(avaliacoes.id, avaliacaoId));
+  if (!avaliacao) return null;
+
+  const [paciente] = await db.select().from(pacientes).where(eq(pacientes.id, avaliacao.pacienteId));
+  if (!paciente) return null;
+
+  if (role === "admin") return avaliacao;
+  if (role === "terapeuta" && paciente.terapeutaId === userId) return avaliacao;
+  if (role === "pais" && paciente.responsavelUserId === userId) return avaliacao;
+
+  if (role === "supervisor") {
+    const [supervisao] = await db.select().from(supervisoes).where(
+      and(eq(supervisoes.supervisorId, userId), eq(supervisoes.terapeutaId, paciente.terapeutaId))
+    );
+    if (supervisao) return avaliacao;
+  }
+
+  return null;
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ avaliacaoId: string }> }
 ) {
+  const [userId, role] = await Promise.all([getUserId(), getUserRole()]);
+  if (!userId || !role) return unauthorized();
+  if (role !== "admin" && role !== "terapeuta" && role !== "supervisor") return unauthorized();
+
   try {
     const { avaliacaoId } = await params;
+    const avaliacao = await getAvaliacaoComAcesso(Number(avaliacaoId), userId, role);
+    if (!avaliacao) return unauthorized("Sem acesso a esta avaliação");
+
     const body = await req.json();
     const dados = patchSchema.parse(body);
 
@@ -22,10 +51,6 @@ export async function PATCH(
       .set({ ...dados, atualizadoEm: new Date().toISOString() })
       .where(eq(avaliacoes.id, Number(avaliacaoId)))
       .returning();
-
-    if (!atualizada) {
-      return NextResponse.json({ error: "Avaliação não encontrada" }, { status: 404 });
-    }
 
     return NextResponse.json(atualizada);
   } catch (err) {

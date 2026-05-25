@@ -6,6 +6,8 @@ import { boolean, integer, pgTable, real, serial, text } from "drizzle-orm/pg-co
 // ─────────────────────────────────────────────
 export const pacientes = pgTable("pacientes", {
   id: serial("id").primaryKey(),
+  terapeutaId: text("terapeuta_id").notNull(),
+  responsavelUserId: text("responsavel_user_id"),
   nome: text("nome").notNull(),
   dataNascimento: text("data_nascimento").notNull(),
   diagnostico: text("diagnostico"),
@@ -87,6 +89,16 @@ export const respostasTransicao = pgTable("respostas_transicao", {
 });
 
 // ─────────────────────────────────────────────
+// Supervisões (supervisor → terapeuta)
+// ─────────────────────────────────────────────
+export const supervisoes = pgTable("supervisoes", {
+  id: serial("id").primaryKey(),
+  supervisorId: text("supervisor_id").notNull(),
+  terapeutaId: text("terapeuta_id").notNull(),
+  criadoEm: text("criado_em").notNull().default(sql`now()`),
+});
+
+// ─────────────────────────────────────────────
 // Tipos exportados para uso no app
 // ─────────────────────────────────────────────
 export type Paciente = typeof pacientes.$inferSelect;
@@ -96,3 +108,4 @@ export type NovaAvaliacao = typeof avaliacoes.$inferInsert;
 export type RespostaMarco = typeof respostasMarcos.$inferSelect;
 export type RespostaBarreira = typeof respostasBarreiras.$inferSelect;
 export type RespostaTransicao = typeof respostasTransicao.$inferSelect;
+export type Supervisao = typeof supervisoes.$inferSelect;
