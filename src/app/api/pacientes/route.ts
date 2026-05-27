@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       .insert(pacientes)
       .values({
         ...dados,
-        terapeutaId: role === "terapeuta" ? userId : (dados.terapeutaId ?? userId),
+        terapeutaId: userId,
         dataInicio: dados.dataInicio || new Date().toISOString().split("T")[0],
       })
       .returning();
