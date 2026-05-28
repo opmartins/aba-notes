@@ -89,6 +89,23 @@ export const respostasTransicao = pgTable("respostas_transicao", {
 });
 
 // ─────────────────────────────────────────────
+// Convites de responsável
+// ─────────────────────────────────────────────
+export const convites = pgTable("convites", {
+  id: serial("id").primaryKey(),
+  pacienteId: integer("paciente_id")
+    .notNull()
+    .references(() => pacientes.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  clerkInvitationId: text("clerk_invitation_id").notNull(),
+  criadoPorUserId: text("criado_por_user_id").notNull(),
+  criadoEm: text("criado_em").notNull().default(sql`now()`),
+  expiraEm: text("expira_em").notNull(),
+  aceitoEm: text("aceito_em"),
+  revogadoEm: text("revogado_em"),
+});
+
+// ─────────────────────────────────────────────
 // Tipos exportados para uso no app
 // ─────────────────────────────────────────────
 export type Paciente = typeof pacientes.$inferSelect;
@@ -98,3 +115,5 @@ export type NovaAvaliacao = typeof avaliacoes.$inferInsert;
 export type RespostaMarco = typeof respostasMarcos.$inferSelect;
 export type RespostaBarreira = typeof respostasBarreiras.$inferSelect;
 export type RespostaTransicao = typeof respostasTransicao.$inferSelect;
+export type Convite = typeof convites.$inferSelect;
+export type NovoConvite = typeof convites.$inferInsert;

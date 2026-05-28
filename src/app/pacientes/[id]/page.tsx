@@ -1,12 +1,14 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { db, pacientes, avaliacoes } from "@/lib/db";
-import { eq, desc } from "drizzle-orm";
-import { ArrowLeftIcon, PlusIcon, ActivityIcon, CalendarIcon, ClipboardListIcon } from "lucide-react";
+import { db, pacientes, avaliacoes, convites } from "@/lib/db";
+import { and, eq, desc, isNull, isNotNull } from "drizzle-orm";
+import { ArrowLeftIcon, ActivityIcon, CalendarIcon, ClipboardListIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { calcularIdade, formatarData } from "@/lib/utils";
 import { NovaAvaliacaoButton } from "@/components/nova-avaliacao-button";
+import { ConviteResponsavel } from "@/components/convite-responsavel";
+import { getUserId, getUserRole } from "@/lib/auth/roles";
 
 export default async function PacientePage({
   params,
@@ -16,6 +18,9 @@ export default async function PacientePage({
   const { id } = await params;
   const pacienteId = Number(id);
 
+  const [userId, role] = await Promise.all([getUserId(), getUserRole()]);
+  if (!userId || !role) redirect("/sign-in");
+
   const [paciente] = await db
     .select()
     .from(pacientes)
@@ -23,11 +28,39 @@ export default async function PacientePage({
 
   if (!paciente) notFound();
 
+  if (role === "profissional" && paciente.terapeutaId !== userId) notFound();
+  if (role === "pais" && paciente.responsavelUserId !== userId) notFound();
+
+  const isProfissional = role === "profissional";
+
   const listaAvaliacoes = await db
     .select()
     .from(avaliacoes)
     .where(eq(avaliacoes.pacienteId, pacienteId))
     .orderBy(desc(avaliacoes.dataAvaliacao));
+
+  const [convitePendente] = isProfissional
+    ? await db
+        .select()
+        .from(convites)
+        .where(
+          and(
+            eq(convites.pacienteId, pacienteId),
+            isNull(convites.aceitoEm),
+            isNull(convites.revogadoEm),
+          ),
+        )
+        .limit(1)
+    : [];
+
+  const [conviteAceito] = isProfissional && paciente.responsavelUserId
+    ? await db
+        .select()
+        .from(convites)
+        .where(and(eq(convites.pacienteId, pacienteId), isNotNull(convites.aceitoEm)))
+        .orderBy(desc(convites.aceitoEm))
+        .limit(1)
+    : [];
 
   const statusLabel: Record<string, string> = {
     em_andamento: "Em andamento",
@@ -67,14 +100,25 @@ export default async function PacientePage({
             </div>
           </div>
 
-          <NovaAvaliacaoButton
-            pacienteId={pacienteId}
-            proximoNumero={listaAvaliacoes.length + 1}
-          />
+          {isProfissional && (
+            <NovaAvaliacaoButton
+              pacienteId={pacienteId}
+              proximoNumero={listaAvaliacoes.length + 1}
+            />
+          )}
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-8 space-y-6">
+        {isProfissional && (
+          <ConviteResponsavel
+            pacienteId={pacienteId}
+            responsavelVinculado={!!paciente.responsavelUserId}
+            convitePendente={convitePendente ?? null}
+            conviteAceito={conviteAceito ?? null}
+          />
+        )}
+
         {/* Dados do paciente */}
         <Card>
           <CardHeader className="pb-3">
@@ -133,11 +177,13 @@ export default async function PacientePage({
               <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
                 <CalendarIcon className="h-10 w-10 text-muted-foreground/40" />
                 <p className="text-muted-foreground text-sm">Nenhuma avaliação registrada ainda.</p>
-                <NovaAvaliacaoButton
-                  pacienteId={pacienteId}
-                  proximoNumero={1}
-                  variant="outline"
-                />
+                {isProfissional && (
+                  <NovaAvaliacaoButton
+                    pacienteId={pacienteId}
+                    proximoNumero={1}
+                    variant="outline"
+                  />
+                )}
               </CardContent>
             </Card>
           ) : (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { SignInButton, SignUpButton, UserButton, Show } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, UserButton, Show, useUser } from "@clerk/nextjs";
 import { PlusIcon, UserRoundIcon, CalendarIcon, ActivityIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,10 @@ import { calcularIdade, formatarData } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function Home() {
+  const { user } = useUser();
+  const role = user?.publicMetadata?.role as "profissional" | "pais" | undefined;
+  const isProfissional = role === "profissional";
+
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -108,24 +112,26 @@ export default function Home() {
               </SignUpButton>
             </Show>
             <Show when="signed-in">
-              <Dialog open={dialogAberto} onOpenChange={(open) => { if (!open) fecharDialog(); setDialogAberto(open); }}>
-                <DialogTrigger render={<Button onClick={() => setPacienteEditando(undefined)} />}>
-                  <PlusIcon className="h-4 w-4" />
-                  Novo paciente
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {pacienteEditando ? "Editar paciente" : "Cadastrar novo paciente"}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <PacienteForm
-                    paciente={pacienteEditando}
-                    onSucesso={aoSalvar}
-                    onCancelar={fecharDialog}
-                  />
-                </DialogContent>
-              </Dialog>
+              {isProfissional && (
+                <Dialog open={dialogAberto} onOpenChange={(open) => { if (!open) fecharDialog(); setDialogAberto(open); }}>
+                  <DialogTrigger render={<Button onClick={() => setPacienteEditando(undefined)} />}>
+                    <PlusIcon className="h-4 w-4" />
+                    Novo paciente
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {pacienteEditando ? "Editar paciente" : "Cadastrar novo paciente"}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <PacienteForm
+                      paciente={pacienteEditando}
+                      onSucesso={aoSalvar}
+                      onCancelar={fecharDialog}
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
               <UserButton />
             </Show>
           </div>
@@ -190,14 +196,18 @@ export default function Home() {
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
                 <UserRoundIcon className="h-10 w-10 text-muted-foreground/40" />
-                <p className="text-muted-foreground">Nenhum paciente cadastrado ainda.</p>
-                <Button
-                  variant="outline"
-                  onClick={() => { setPacienteEditando(undefined); setDialogAberto(true); }}
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  Cadastrar primeiro paciente
-                </Button>
+                <p className="text-muted-foreground">
+                  {isProfissional ? "Nenhum paciente cadastrado ainda." : "Nenhum paciente vinculado ao seu acesso."}
+                </p>
+                {isProfissional && (
+                  <Button
+                    variant="outline"
+                    onClick={() => { setPacienteEditando(undefined); setDialogAberto(true); }}
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Cadastrar primeiro paciente
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
@@ -241,21 +251,25 @@ export default function Home() {
                       >
                         Ver avaliações
                       </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => abrirEdicao(p)}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => excluir(p.id)}
-                      >
-                        Excluir
-                      </Button>
+                      {isProfissional && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => abrirEdicao(p)}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => excluir(p.id)}
+                          >
+                            Excluir
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
