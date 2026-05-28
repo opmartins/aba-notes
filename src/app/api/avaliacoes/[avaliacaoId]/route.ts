@@ -1,6 +1,6 @@
-import { db, avaliacoes, pacientes, supervisoes } from "@/lib/db";
+import { db, avaliacoes, pacientes } from "@/lib/db";
 import { getUserId, getUserRole, unauthorized } from "@/lib/auth/roles";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -16,16 +16,8 @@ async function getAvaliacaoComAcesso(avaliacaoId: number, userId: string, role: 
   const [paciente] = await db.select().from(pacientes).where(eq(pacientes.id, avaliacao.pacienteId));
   if (!paciente) return null;
 
-  if (role === "admin") return avaliacao;
-  if (role === "terapeuta" && paciente.terapeutaId === userId) return avaliacao;
+  if (role === "profissional" && paciente.terapeutaId === userId) return avaliacao;
   if (role === "pais" && paciente.responsavelUserId === userId) return avaliacao;
-
-  if (role === "supervisor") {
-    const [supervisao] = await db.select().from(supervisoes).where(
-      and(eq(supervisoes.supervisorId, userId), eq(supervisoes.terapeutaId, paciente.terapeutaId))
-    );
-    if (supervisao) return avaliacao;
-  }
 
   return null;
 }
@@ -36,7 +28,7 @@ export async function PATCH(
 ) {
   const [userId, role] = await Promise.all([getUserId(), getUserRole()]);
   if (!userId || !role) return unauthorized();
-  if (role !== "admin" && role !== "terapeuta" && role !== "supervisor") return unauthorized();
+  if (role !== "profissional") return unauthorized();
 
   try {
     const { avaliacaoId } = await params;

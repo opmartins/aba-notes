@@ -13,7 +13,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     const [paciente] = await db.select().from(pacientes).where(eq(pacientes.id, Number(id)));
     if (!paciente) return NextResponse.json({ error: "Paciente não encontrado" }, { status: 404 });
 
-    if (role === "terapeuta" && paciente.terapeutaId !== userId) return unauthorized();
+    if (role === "profissional" && paciente.terapeutaId !== userId) return unauthorized();
     if (role === "pais" && paciente.responsavelUserId !== userId) return unauthorized();
 
     return NextResponse.json(paciente);
@@ -26,14 +26,13 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const [userId, role] = await Promise.all([getUserId(), getUserRole()]);
   if (!userId || !role) return unauthorized();
-  if (role !== "admin" && role !== "terapeuta") return unauthorized();
+  if (role !== "profissional") return unauthorized();
 
   try {
     const { id } = await params;
     const [paciente] = await db.select().from(pacientes).where(eq(pacientes.id, Number(id)));
     if (!paciente) return NextResponse.json({ error: "Paciente não encontrado" }, { status: 404 });
-
-    if (role === "terapeuta" && paciente.terapeutaId !== userId) return unauthorized();
+    if (paciente.terapeutaId !== userId) return unauthorized();
 
     const body = await req.json();
     const dados = pacienteSchema.parse(body);
@@ -57,14 +56,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const [userId, role] = await Promise.all([getUserId(), getUserRole()]);
   if (!userId || !role) return unauthorized();
-  if (role !== "admin" && role !== "terapeuta") return unauthorized();
+  if (role !== "profissional") return unauthorized();
 
   try {
     const { id } = await params;
     const [paciente] = await db.select().from(pacientes).where(eq(pacientes.id, Number(id)));
     if (!paciente) return NextResponse.json({ error: "Paciente não encontrado" }, { status: 404 });
-
-    if (role === "terapeuta" && paciente.terapeutaId !== userId) return unauthorized();
+    if (paciente.terapeutaId !== userId) return unauthorized();
 
     await db.update(pacientes).set({ ativo: false, atualizadoEm: new Date().toISOString() }).where(eq(pacientes.id, Number(id)));
     return new NextResponse(null, { status: 204 });

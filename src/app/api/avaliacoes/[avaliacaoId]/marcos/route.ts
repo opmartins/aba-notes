@@ -1,4 +1,4 @@
-import { db, avaliacoes, pacientes, respostasMarcos, supervisoes } from "@/lib/db";
+import { db, avaliacoes, pacientes, respostasMarcos } from "@/lib/db";
 import { getUserId, getUserRole, unauthorized } from "@/lib/auth/roles";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -12,26 +12,14 @@ const respostaSchema = z.object({
   pontuacao: z.number().nullable(),
 });
 
-async function temAcessoEdicaoAvaliacao(avaliacaoId: number, userId: string, role: string) {
-  if (role !== "admin" && role !== "terapeuta" && role !== "supervisor") return false;
-
+async function temAcessoEdicaoAvaliacao(avaliacaoId: number, userId: string) {
   const [avaliacao] = await db.select().from(avaliacoes).where(eq(avaliacoes.id, avaliacaoId));
   if (!avaliacao) return false;
 
   const [paciente] = await db.select().from(pacientes).where(eq(pacientes.id, avaliacao.pacienteId));
   if (!paciente) return false;
 
-  if (role === "admin") return true;
-  if (role === "terapeuta") return paciente.terapeutaId === userId;
-
-  if (role === "supervisor") {
-    const [supervisao] = await db.select().from(supervisoes).where(
-      and(eq(supervisoes.supervisorId, userId), eq(supervisoes.terapeutaId, paciente.terapeutaId))
-    );
-    return !!supervisao;
-  }
-
-  return false;
+  return paciente.terapeutaId === userId;
 }
 
 export async function PUT(
@@ -40,10 +28,11 @@ export async function PUT(
 ) {
   const [userId, role] = await Promise.all([getUserId(), getUserRole()]);
   if (!userId || !role) return unauthorized();
+  if (role !== "profissional") return unauthorized();
 
   try {
     const { avaliacaoId } = await params;
-    const temAcesso = await temAcessoEdicaoAvaliacao(Number(avaliacaoId), userId, role);
+    const temAcesso = await temAcessoEdicaoAvaliacao(Number(avaliacaoId), userId);
     if (!temAcesso) return unauthorized("Sem acesso a esta avaliação");
 
     const body = await req.json();
